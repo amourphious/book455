@@ -1,0 +1,392 @@
+<!DOCTYPE HTML>
+<!--
+	Prologue by HTML5 UP
+	html5up.net | @n33co
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<html>
+	<head>
+		<title>Prologue by HTML5 UP</title>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		<!--[if lte IE 8]><script src="css/ie/html5shiv.js"></script><![endif]-->
+		<script src="/static/js/jquery.min.js"></script>
+		<script src="/static/js/jquery.scrolly.min.js"></script>
+		<script src="/static/js/jquery.scrollzer.min.js"></script>
+		<script src="/static/js/skel.min.js"></script>
+		<script src="/static/js/skel-layers.min.js"></script>
+		<script src="/static/js/init.js"></script>
+		<noscript>
+			<link rel="stylesheet" href="/static/css/skel.css" />
+			<link rel="stylesheet" href="/static/css/style.css" />
+			<link rel="stylesheet" href="/static/css/style-wide.css" />
+		</noscript>
+		<script>
+                        var showSignup = function(){
+                            document.getElementById("intro").style.visibility="hidden";
+                            document.getElementById("intro").style.display="none";
+                            document.getElementById("login").style.visibility="hidden";
+                            document.getElementById("login").style.display="none";
+                            document.getElementById("signup").style.visibility="visible";
+                            document.getElementById("signup").style.display="block";
+                        }
+                        var showLogin = function(){
+                            document.getElementById("intro").style.visibility="hidden";
+                            document.getElementById("intro").style.display="none";
+                            document.getElementById("signup").style.visibility="hidden";
+                            document.getElementById("signup").style.display="none";
+                            document.getElementById("login").style.visibility="visible";
+                            document.getElementById("login").style.display="block";
+                        }
+                        var showIntro = function(){
+                            document.getElementById("signup").style.visibility="hidden";
+                            document.getElementById("signup").style.display="none";
+                            document.getElementById("login").style.visibility="hidden";
+                            document.getElementById("login").style.display="none";
+                            document.getElementById("intro").style.visibility="visible";
+                            document.getElementById("intro").style.display="block";
+                        }
+		</script>
+		<script>
+                        function validateLoginForm(){
+                                var username = document.forms["loginForm"]["login_username"].value;
+                                var password = document.forms["loginForm"]["login_password"].value;
+                                if(username == "" || password == "" || username == null || password == null){
+                                        alert("Invalid Login !");
+                                        return false;
+                                }
+                                return true;
+                        }
+                        function validateSignupForm(){
+                                var username = document.forms["signupForm"]["signup_name"].value;
+                                var password = document.forms["signupForm"]["signup_password"].value;
+                                var re_pass = document.forms["signupForm"]["signup_re_password"].value;
+                                var email = document.forms["signupForm"]["signup_email"].value;
+                                if(username == "" || password == "" || username == null || password == null || email == "" || email == null || re_pass == "" || re_pass == null){
+                                        alert("Enter all details !!");
+                                        return false;
+                                }
+                                var re = /^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$/;
+                                if(password != re_pass){
+                                        alert("Password Dont Match !");
+                                        return false;
+                                }
+                                return true;
+                        }
+                </script>
+		{%if signup_error%}
+                    <style>
+                        #login{
+                            visibility:hidden;
+                            display:none;
+                        }
+                        #signup{
+                            visibility:visible;
+                            display:block;
+                        }
+                        #intro{
+                            visibility:hidden;
+                            display:none;
+                        }
+                    </style>
+		{% else %}
+                    {% if login_error %}
+                        <style>
+                            #login{
+                                visibility:visible;
+                                display:block;
+                            }
+                            #signup{
+                                visibility:hidden;
+                                display:none;
+                            }
+                            #intro{
+                                visibility:hidden;
+                                display:none;
+                            }
+                        </style>
+                    {%else%}
+                        <style>
+                            #login{
+                                visibility:hidden;
+                                display:none;
+                            }
+                            #signup{
+                                visibility:hidden;
+                                display:none;
+                            }
+                            #intro{
+                                visibility:visible;
+                                display:block;
+                            }
+                        </style>
+                    {%endif%}
+		{%endif%}
+		<!--[if lte IE 9]><link rel="stylesheet" href="static/css/ie/v9.css" /><![endif]-->
+		<!--[if lte IE 8]><link rel="stylesheet" href="static/css/ie/v8.css" /><![endif]-->
+	</head>
+	<body>
+
+		<!-- Header -->
+			<div id="header" class="skel-layers-fixed">
+
+				<div class="top">
+
+					<!-- Logo -->
+						<div id="logo">
+							<span class="image avatar48"><img src="images/avatar.jpg" alt="" /></span>
+							<h1 id="title">Book for Five-Five</h1>
+							{%if user%}
+							<p><h5><a href="#">{{user.name}}</a></h5></p>
+							{%else%}
+							<p><h5><a href="#" onclick="showLogin()">login</a> | <a href="#" onclick="showSignup()">signup</a></h5></p>
+                                                        {%endif%}
+						</div>
+
+					<!-- Nav -->
+						<nav id="nav">
+							<!--
+							
+								Prologue's nav expects links in one of two formats:
+								
+								1. Hash link (scrolls to a different section within the page)
+								
+								   <li><a href="#foobar" id="foobar-link" class="icon fa-whatever-icon-you-want skel-layers-ignoreHref"><span class="label">Foobar</span></a></li>
+
+								2. Standard link (sends the user to another page/site)
+
+								   <li><a href="http://foobar.tld" id="foobar-link" class="icon fa-whatever-icon-you-want"><span class="label">Foobar</span></a></li>
+							
+							-->
+							<ul>
+								<li><a href="#top" id="top-link" class="skel-layers-ignoreHref"><span class="icon fa-home" onclick="showIntro()">Intro</span></a></li>
+								<li><a href="#collection" id="collection-link" class="skel-layers-ignoreHref"><span class="icon fa-th">Collection</span></a></li>
+								<li><a href="#search" id="search-link" class="skel-layers-ignoreHref"><span class="icon fa-search">Search</span></a></li>
+								<li><a href="#contact" id="contact-link" class="skel-layers-ignoreHref"><span class="icon fa-envelope">Contact</span></a></li>
+							</ul>
+						</nav>
+						
+				</div>
+				
+				<div class="bottom">
+
+					<!-- Social Icons -->
+						<ul class="icons">
+							<li><a href="#" class="icon fa-twitter"><span class="label">Twitter</span></a></li>
+							<li><a href="#" class="icon fa-facebook"><span class="label">Facebook</span></a></li>
+							<li><a href="#" class="icon fa-github"><span class="label">Github</span></a></li>
+							<li><a href="#" class="icon fa-dribbble"><span class="label">Dribbble</span></a></li>
+							<li><a href="#" class="icon fa-envelope"><span class="label">Email</span></a></li>
+						</ul>
+				
+				</div>
+			
+			</div>
+
+		<!-- Main -->
+			<div id="main">
+
+				<!-- Intro -->
+					<section id="top" class="one dark cover">
+                                                <div id="intro" class="container">
+							<header>
+								<h2 class="alt">Book For 55</h2>
+								<p>Better Way To Read !!<br />
+								Why Pay More When You Can Read a Lot MORE !!!</p>
+							</header>
+							{% if not user %}
+							<footer>
+								<a href="#" class="button scrolly" onclick="showLogin()">Login</a>
+							</footer>
+							{%endif%}
+
+						</div>
+                                                <div class="container" id="login">
+
+							<header>
+								<h2>Login</h2>
+							</header>
+							<form method="post" action="/login" onsubmit="return validateLoginForm()" name="loginForm">
+								<div class="row 50%">
+									<div class="6u"><input type="text" name="login_username" placeholder="Username" /></div>
+									<div class="6u"><input type="password" name="login_password" placeholder="Password" /></div>
+                                                                </div>
+								<div class="row">
+                                                                            <div class="12u">
+                                                                                    <input type="submit" value="Login" />
+                                                                            </div>
+                                                                </div>
+								<footer>
+                                                                    {% if login_error %}
+                                                                    <p>{{login_error}}</p>
+                                                                    {%endif%}
+                                                                    <a href="#" onclick="showSignup()">new user ?</a>
+								</footer>
+							</form>
+                                                </div>
+                                                <div class="container" id="signup">
+							<header>
+								<h2>Sign-Up</h2>
+							</header>
+							<form method="post" action="/signup" onsubmit="return validateSignupForm()" name = "signupForm">
+								<div class="row 50%">
+									<div class="6u"><input type="text" name="signup_name" placeholder="Name" /></div>
+									<div class="6u"><input type="email" name="signup_email" placeholder="E-Mail" /></div>
+									
+								</div>
+								<div class="row 50%">
+									<div class="6u"><input type="password" name="signup_password" placeholder="Password" /></div>
+									<div class="6u">
+										<input type="password" name="signup_re_password" placeholder="re-type Password" />
+									</div>
+								</div>
+								<div class="row">
+                                                                            <div class="12u">
+                                                                                    <input type="submit" value="Sign-Up" />
+                                                                            </div>
+                                                                </div>
+								<footer>
+                                                                    {% if signup_error %}
+                                                                    <p>{{signup_error}}</p>
+                                                                    {%endif%}
+                                                                    <a href="#" onclick="showLogin()">Already Registered ?</a>
+								</footer>
+							</form>
+
+						</div>
+					</section>
+					
+				<!-- Portfolio -->
+					<section id="collection" class="two">
+						<div class="container">
+					
+							<header>
+								<h2>Collection</h2>
+							</header>							
+							<p>Look for your Favourites</p>
+							
+                                                                {%if books%}
+                                                                {%set j = 0%}
+                                                                {%for i in range(0,n,3)%}
+                                                                <div class="row">
+                                                                        <div class="4u">
+                                                                            <article class="item" {%if j%2 == 0%} style="background-color:rgba(245, 245, 220,0.5);"{%else%} style="background-color:rgba(169, 169, 169, 0.4);"{%endif%}>
+                                                                                    <a href="/book/{{books[j].id()}}" class="image book_centered"><img src="{{books[j].book_img}}" alt="" /></a>
+                                                                                    <a href="/book/{{books[j].id()}}">
+                                                                                    <header>
+                                                                                            <h3><b>{{books[j].name}}</b></h3>
+                                                                                            <h4>{{books[j].author}}</h4>
+                                                                                    </header>
+                                                                                    </a>
+                                                                            </article>
+                                                                        </div>
+                                                                        {%set j = j+1%}
+                                                                        {% if j < n %}
+                                                                        <div class="4u">
+                                                                            <article class="item" {%if j%2 == 0%} style="background-color:rgba(245, 245, 220,0.5);"{%else%} style="background-color:rgba(169, 169, 169, 0.4);"{%endif%}>
+                                                                                    <a href="/book/{{books[j].id()}}" class="image book_centered"><img src="{{books[j].book_img}}" alt="" /></a>
+                                                                                    <a href="/book/{{books[j].id()}}">
+                                                                                    <header>
+                                                                                            <h3><b>{{books[j].name}}</b></h3>
+                                                                                            <h4><i>{{books[j].author}}</i></h4>
+                                                                                    </header>
+                                                                                    </a>
+                                                                            </article>
+                                                                        </div>
+                                                                        {%set j = j+1%}
+                                                                        {%endif%}
+                                                                        {% if j < n %}
+                                                                        <div class="4u">
+                                                                            <article class="item" {%if j%2 == 0%} style="background-color:rgba(245, 245, 220,0.5);"{%else%} style="background-color:rgba(169, 169, 169, 0.4);"{%endif%}>
+                                                                                    <a href="/book/{{books[j].id()}}" class="image book_centered"><img src="{{books[j].book_img}}" alt="" /></a>
+                                                                                    <a href="/book/{{books[j].id()}}">
+                                                                                    <header>
+                                                                                            <h3><b>{{books[j].name}}</b></h3>
+                                                                                            <h4><i>{{books[j].author}}</i></h4>
+                                                                                    </header>
+                                                                                    </a>
+                                                                            </article>
+                                                                        </div>
+                                                                        {%set j = j+1%}
+                                                                        {%endif%}
+                                                                </div>
+                                                                {%endfor%}
+                                                                {%endif%}
+						</div>
+					</section>
+
+				<!-- About Me -->
+					<section id="search" class="three">
+						<div class="container">
+
+							<header>
+								<h2>Search</h2>
+							</header>
+							<p>In a Hurry !!</p>
+                                                    
+							<p>
+                                                                <form method ="post" action ="#">
+                                                                        <div class ="row">
+                                                                                <div class="4u"><Input type="text" name="name" placeholder="Book's Name" /></div>
+                                                                                <div class="4u"><input type="text" name="author" placeholder="Author's Name" /></div>
+                                                                                <div class="4u"><input type="text" name="isbn" placeholder="ISBN" /></div>
+                                                                                
+                                                                        </div>
+                                                                        <div class="row">
+                                                                            <div class="12u">
+                                                                                    <input type="submit" value="Search" />
+                                                                            </div>
+                                                                        </div>
+                                                                </form>
+							</p>
+
+						</div>
+					</section>
+			
+				<!-- Contact -->
+					<section id="contact" class="four">
+						<div class="container">
+
+							<header>
+								<h2>Contact</h2>
+							</header>
+
+							<p>Practice Your Liberty !!!
+							<br>Ask|Request|Tell|Appreciate|SHOUT
+							<br>Interested to open Distribution Center</p>
+							<form method="post" action="#">
+								<div class="row 50%">
+									<div class="6u"><input type="text" name="name" placeholder="Name" /></div>
+									<div class="6u"><input type="text" name="email" placeholder="Email" /></div>
+								</div>
+								<div class="row 50%">
+									<div class="12u">
+										<textarea name="message" placeholder="Message"></textarea>
+									</div>
+								</div>
+								<div class="row">
+									<div class="12u">
+										<input type="submit" value="Send Message" />
+									</div>
+								</div>
+							</form>
+
+						</div>
+					</section>
+			
+			</div>
+
+		<!-- Footer -->
+			<div id="footer">
+				
+				<!-- Copyright -->
+					<ul class="copyright">
+						<li>&copy; Untitled. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+					</ul>
+				
+			</div>
+
+	</body>
+</html>

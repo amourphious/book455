@@ -1,0 +1,23 @@
+application: book455
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+- url: /static
+  static_dir: static
+
+- url: /images
+  static_dir: static/images
+
+- url: /images/(.*)
+  static_files: static/images/\1
+  upload: static/images/(.*)
+  
+- url: /.*
+  script: book455.app
+  
+libraries:
+- name: jinja2
+  version: latest
