@@ -181,7 +181,7 @@
 									</td></tr>
 									<tr id=details><td>
 									<div style="text-align:left">
-									{{book.description}} &nbsp;&nbsp;&nbsp;&nbsp;<a href="#" onclick=showLess()>show Less</a>
+									{{book.description|safe}} &nbsp;&nbsp;&nbsp;&nbsp;<a href="#" onclick=showLess()>show Less</a>
 									</div>
 									</td></tr>
 									{%endif%}
@@ -226,7 +226,7 @@
                                                                         {%if book.description%}
 									<tr id=summary><td>
 									<div style="text-align:left">
-									{{book.description[0:150]}}.......<a href="#" onclick=showMore()>show More</a>
+									{{book.description[0:150]|safe}}.......<a href="#" onclick=showMore()>show More</a>
 									</div>
 									<tr><td></tr></td>
 									</td></tr>

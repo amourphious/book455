@@ -69,10 +69,13 @@ class Book(db.Model):
 		b = a.id()
 		return b	
 
+
+order_state  = ["Placed", "Approved", "Shipped", "Canceled", "Delivered"]
+
 class Order(db.Model):
 	user=db.StringProperty(required=True)
 	book=db.StringProperty(required=True)
-	status=db.StringProperty(required=True)
+	status=db.IntegerProperty(required=True)
 	placed_time = db.DateTimeProperty(required=True)
 	approved_time = db.DateTimeProperty()
 	shipped_time = db.DateTimeProperty()
@@ -84,6 +87,30 @@ class Order(db.Model):
 		a = self.key()
 		b = a.id()
 		return b
+		
+	@staticmethod
+	@db.transactional(xg=True)
+	def changeStatus(order_no, status, user_type):
+		order = db.get(order_no)
+		if order:
+			if user_type == 0:
+				if status == 3 and order.status < 3:
+					order.status = status
+					order.cancel_time = datetime.now()
+					Book.add_book(1, order.book)
+			else:
+				if status > order.status and status < 5 and (not order.status == 3):
+					order.status = status
+					if status == 1:
+						order.approved_time = datetime.now()
+					elif status == 2:
+						order.shipped_time = datetime.now()
+					elif status == 3:
+						order.cancel_time = datetime.now()
+						Book.add_book(1, order.book)
+					else:
+						order.delivered_time = datetime.now()
+		return order.put()
 
 class Handler(webapp2.RequestHandler):
 	def write(self, *a, **kw):
@@ -285,7 +312,7 @@ class BuyBook(Handler):
 		user = self.request.get('user')
 		book= self.request.get('book')
 		deliver_to = "tathagat tut"
-		status="placed"
+		status=0
 		placed_time=datetime.now()
 		if Book.book_purchase_request(book):
 			order = Order( user = user, book = book, deliver_to = deliver_to, status = status, placed_time = placed_time)
@@ -321,7 +348,14 @@ class BookOrder(Handler):
 				for order in orders:
 					books.append(db.get(order.book))
 				self.render("orders.html", orders = orders, books = books, user = user[0])
-		
+
+	def post(self):
+		order_no = self.request.get('order_no')
+		status = self.request.get('status')
+		user_type = self.request.get('user_type')
+		Order.changeStatus(order_no, int(status), int(user_type))
+		self.redirect('./orders')
+				
 		
 		
 		

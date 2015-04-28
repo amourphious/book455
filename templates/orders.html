@@ -126,63 +126,167 @@
 		<!-- Main -->
 			<div id="main">
 				<!-- Portfolio -->
+				{%set order_status = ["Placed", "Approved", "Shipped", "Canceled", "Delivered"]%}
                                         <h2 >Your Orders</h2>
-                                        {% set i = 0 %}
-					{% for order in orders %}
-					{% if i%2 == 0 %}
-					<section class="two">
+                                        {% if user.userType == '0'%}
+                                            {% set i = 0 %}
+                                            {% for order in orders %}
+                                                {% if i%2 == 0 %}
+                                                    <section class="two">
+                                                {%else%}
+                                                    <section class="three">
+                                                {%endif%}
+                                                    <div class="container">
+                                                            <header>
+                                                                    <h2>Order: {{order.id()}}<br><i style="font-size:0.7em">{{books[i].name}}{{books[i].author}}</i></h2>
+                                                            </header>
+							
+                                                            <p></p>
+						
+                                                            <div class="row">
+                                                                        <div class="4u">
+                                                                                    <form method="post" action="/orders">
+                                                                                            <input type="hidden" name="order_no" value="{{order.key()}}" />
+                                                                                            <input type="hidden" name="status" value="3" />
+                                                                                            <input type="hidden" name="user_type" value="0" />
+                                                                                            <article class="item">
+                                                                                                {%if books[i].book_img%}
+                                                                                                        <a href="#" class="image book_centered" style="background-color:rgba(245, 245, 220,0.5);"><img src="{{books[i].book_img}}" alt="" /></a>
+                                                                                                {%else%}
+                                                                                                        <a href="#" class="image book_centered"><img src="/static/images/pic02.jpg" alt="" /></a>
+                                                                                                {%endif%}
+                                                                                                <header>
+                                                                                                        <input type="submit" value="Cancel">
+                                                                                                </header>
+                                                                                            </article>
+                                                                                    </form>
+                                                                        </div>
+                                                                        <div class="8u">
+                                                                            <table class="default">
+                                                                                {%if order.status > -1%}
+                                                                                    <tr><td>Status : <b>{{order_status[order.status]}}</b></td></tr>
+                                                                                {%endif%}
+                                                                                {%if order.placed_time%}
+                                                                                    <tr><td>
+                                                                                    <div style="text-align:left">
+                                                                                        {{order.placed_time}}
+                                                                                    </div>
+                                                                                    </tr></td>
+                                                                                {%endif%}
+                                                                                {%if order.approved_time%}
+                                                                                    <tr><td>Approved At : <b>{{order.approved_time}}</b></td></tr>
+                                                                                {%endif%}
+                                                                                {%if order.shipped_time%}
+                                                                                    <tr><td>Shipped At : <b>{{order.shippped_time}}</b></td></tr>
+                                                                                {%endif%}
+                                                                                {%if order.cancel_time%}
+                                                                                    <tr><td>Cancel Time : <b>{{order.cancel_time}}</b></td></tr>
+                                                                                {%endif%}
+                                                                                {%if order.delivered_time%}
+                                                                                    <tr><td>Delivered At : <b>{{order.delivered_time}}</b></td></tr>
+                                                                                {%endif%}
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+                                                                <footer>
+                                                                        <div class="4u" style="text-align:right;"><p>Deliver To: <b>Tathagat Tutorials,<br>New Delhi House<br>Barahkhaba Road, <br>C.P. New Delhi</b></p>
+                                                                </footer>
+
+                                                    </div>
+                                                </section>
+                                                {% set i = i+1 %}
+                                            {%endfor%}
 					{%else%}
-					<section class="three">
-					{%endif%}
-						<div class="container">
+                                            {% set i = 0 %}
+                                            {% for order in orders %}
+                                                {% if i%2 == 0 %}
+                                                    <section class="two">
+                                                {%else%}
+                                                    <section class="three">
+                                                {%endif%}
+                                                    <div class="container">
 							<header>
 								<h2>Order: {{order.id()}}<br><i style="font-size:0.7em">{{books[i].name}}{{books[i].author}}</i></h2>
 							</header>
 							
 							<p></p>
-						
+                                                        <form method="post" action="/orders">
 							<div class="row">
                                                                     <div class="4u">
-                                                                                <form method="post" action="/orders">
-                                                                                <input type="hidden" name="user" value="{{user.key()}}" />
-                                                                                <input type="hidden" name="order" value="{{order.key()}}" />
+                                                                                
+                                                                                <input type="hidden" name="order_no" value="{{order.key()}}" />
+                                                                                <input type="hidden" name="user_type" value="1" />
                                                                                 <article class="item">
                                                                                         {%if books[i].book_img%}
                                                                                         <a href="#" class="image book_centered" style="background-color:rgba(245, 245, 220,0.5);"><img src="{{books[i].book_img}}" alt="" /></a>
                                                                                         {%else%}
                                                                                         <a href="#" class="image book_centered"><img src="/static/images/pic02.jpg" alt="" /></a>
                                                                                         {%endif%}
+                                                                                        <header>
+                                                                                
+                                                                                        </header>
                                                                                 </article>
-									</form>
+									
 								</div>
-								<div class="8u">
-                                                                        <form method="post" action="/orders">
-                                                                        <input type="hidden" name="user" value="{{user.key()}}" />
-                                                                        
+								<div class="4u">
                                                                         <table class="default">
-                                                                        {%if order.status%}
-									<tr><td>Status : <b>{{order.status}}</b></td></tr>
+                                                                        {%if order.status > -1%}
+                                                                            <tr><td>Status : <b>{{order_status[order.status]}}</b></td></tr>
 									{%endif%}
                                                                         {%if order.placed_time%}
-									<tr><td>
-									<div style="text-align:left">
-									{{order.placed_time}}
-									</div>
-									</tr></td>
+                                                                            <tr><td>
+                                                                            <div style="text-align:left">
+                                                                                {{order.placed_time}}
+                                                                            </div>
+                                                                            </tr></td>
 									{%endif%}
-									<>
+									{%if order.approved_time%}
+                                                                            <tr><td>Approved At : <b>{{order.approved_time}}</b></td></tr>
+									{%endif%}
+									{%if order.shipped_time%}
+                                                                            <tr><td>Shipped At : <b>{{order.shippped_time}}</b></td></tr>
+									{%endif%}
+									{%if order.cancel_time%}
+                                                                            <tr><td>Cancel Time : <b>{{order.cancel_time}}</b></td></tr>
+									{%endif%}
+									{%if order.delivered_time%}
+                                                                            <tr><td>Delivered At : <b>{{order.delivered_time}}</b></td></tr>
+									{%endif%}
 									</table>
-									</form>
+								</div>
+								<div class="4u">
+                                                                    <table class="default">
+                                                                            <tr><td>
+                                                                                <select name="status">
+                                                                                    {%for j in range(order.status, 5)%}
+                                                                                        <option value="{{j}}"> {{order_status[j]}}</option>
+                                                                                    {%endfor%}
+                                                                                </select>
+                                                                            </td></tr>
+                                                                        {%if users[i].name%}
+                                                                            <tr><td>
+                                                                            <div style="text-align:left">
+                                                                                {{users[i].name}}
+                                                                            </div>
+                                                                            </tr></td>
+									{%endif%}
+									{%if users[i].email_id%}
+                                                                            <tr><td>{{users[i].email_id}}</td></tr>
+									{%endif%}
+									<tr><td><input type="submit" value="change status"><tr></td>
+									</table>
 								</div>
 							</div>
+							</form>
 							<footer>
                                                                 <div class="4u" style="text-align:right;"><p>Deliver To: <b>Tathagat Tutorials,<br>New Delhi House<br>Barahkhaba Road, <br>C.P. New Delhi</b></p>
 							</footer>
 
 						</div>
 					</section>
-					{% set i = i+1 %}
+					{%set i = i + 1%}
 					{%endfor%}
+					{%endif%}
 			</div>
 
 		<!-- Footer -->
