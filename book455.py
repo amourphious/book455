@@ -71,7 +71,7 @@ class Book(db.Model):
 
 
 order_state  = ["Placed", "Approved", "Shipped", "Canceled", "Delivered"]
-
+	
 class Order(db.Model):
 	user=db.StringProperty(required=True)
 	book=db.StringProperty(required=True)
@@ -98,6 +98,7 @@ class Order(db.Model):
 					order.status = status
 					order.cancel_time = datetime.now()
 					Book.add_book(1, order.book)
+					return order.put(), order.status
 			else:
 				if status > order.status and status < 5 and (not order.status == 3):
 					order.status = status
@@ -110,7 +111,33 @@ class Order(db.Model):
 						Book.add_book(1, order.book)
 					else:
 						order.delivered_time = datetime.now()
-		return order.put()
+					return order.put(), order.status
+		return None
+
+all_books = []
+user_map = {}
+
+def update_books():
+	global all_books
+	all_books = list(db.GqlQuery('select * from Book'))
+	return all_books()
+	
+def get_books():
+	if len(all_books) == 0:
+		update_books()
+	return all_books
+
+def authenticate(cookie):
+	if user_map[cookie]:
+		return user_map[cookie]
+	else: 
+		user =  db.GqlQuery("select * from user where password ='" + cookie + "'")
+		user = list(user)
+		if len(user) > 0:
+			user_map[cookie] = user[0]
+			return user[0]
+		else:
+			return None
 
 class Handler(webapp2.RequestHandler):
 	def write(self, *a, **kw):
@@ -199,41 +226,35 @@ class Signup(Handler):
 class Book455(Handler):
 	def get(self):
 		cookie = self.request.cookies.get("name")
+		books = get_books()
 		user = None
-		books = None
-		books = db.GqlQuery("select * from Book")
-		books = list(books)
 		if len(books) <= 0:
 			books = None
 			n = 0
 		else:
 			n = len(books)
-		if cookie == "" or cookie == None:
-			logging.error(cookie)
-		else:
-			user =  db.GqlQuery("select * from user where password ='" + cookie + "'")
-			user = list(user)
-			if len(user) > 0:
-				user = user[0]
-			else:
-				user = None
+		if cookie != "" and cookie != None:
+			user = authenticate(cookie)
 		self.render("index.html", user = user, books = books, n = n)
 				
 
 
 class BookAdd(Handler):
+	def render_page(self, user):
+		if(user and user.userType == '1'):
+			books = get_books()
+			self.render("book_add.html", books = books)
+		else:
+			self.redirect("/index")
+			
+			
 	def get(self):
 		cookie = self.request.cookies.get("name")
 		if cookie == "" or cookie == None:
 			self.render("index.html")
 		else:
-			user =  db.GqlQuery("select * from user where password ='" + cookie + "'")
-			if(user and user[0].userType == '1'):
-				books = db.GqlQuery("select * from Book")
-				books = list(books)
-				self.render("book_add.html", books = books)
-			else:
-				self.redirect("/index")
+			user =  authenticate(cookie)
+			self.render_page(user)
 		
 	def getBookProperty(self, book, prop):
 		if len(book.getElementsByTagName(prop)) > 0:
@@ -247,41 +268,44 @@ class BookAdd(Handler):
 		isbn = isbn.replace(" ", "")
 		qty = self.request.get("qty")
 		qty = qty.replace(" ", "")
+		cookie = self.request.cookies.get("name")
 		logging.error(repr(ISBN_RE.match(isbn)))
 		logging.error(ISBN_RE.match(qty))
-		if isbn and qty:
+		if isbn and qty and ISBN_RE.match(isbn) and ISBN_RE.match(qty) and cookie:
+			user = authenticate(cookie)
 			book_list =  db.GqlQuery("select * from Book where isbn='" + isbn+ "'")
 			logging.error("book")
 			book_list = list(book_list)
 			if len(book_list) > 0:
 				logging.error("book already present")
 				Book.add_book(qty, book_list[0].key())
-				self.redirect("/add_book")
+				update_books()
+				self.render_page(user)
 				return
-		url = "https://www.goodreads.com/book/isbn?key=EQE829dxVCEFRGpamU8vQ&isbn=" + isbn
-		try:
-			logging.error("querying")
-			contents = urlfetch.fetch(url).content
-			results = minidom.parseString(contents)
-			book_data = results.getElementsByTagName("book")[0]
-			book_name = self.getBookProperty(book_data, "title")
-			book_img = self.getBookProperty(book_data, "image_url")
-			book_lang = self.getBookProperty(book_data, "language_code")
-			book_desc = self.getBookProperty(book_data, "description")
-			book_rating = self.getBookProperty(book_data, "average_rating")
-			book_pages = self.getBookProperty(book_data, "num_pages")
-			book_format = self.getBookProperty(book_data, "format")
-			book_gr_link = self.getBookProperty(book_data, "link")
-			authors_str = ""
-			if len(book_data.getElementsByTagName("authors")) > 0:
-				book_authors =  book_data.getElementsByTagName("authors")[0]
-				book_author = book_authors.getElementsByTagName("author")
+			url = "https://www.goodreads.com/book/isbn?key=EQE829dxVCEFRGpamU8vQ&isbn=" + isbn
+			try:
+				logging.error("querying")
+				contents = urlfetch.fetch(url).content
+				results = minidom.parseString(contents)
+				book_data = results.getElementsByTagName("book")[0]
+				book_name = self.getBookProperty(book_data, "title")
+				book_img = self.getBookProperty(book_data, "image_url")
+				book_lang = self.getBookProperty(book_data, "language_code")
+				book_desc = self.getBookProperty(book_data, "description")
+				book_rating = self.getBookProperty(book_data, "average_rating")
+				book_pages = self.getBookProperty(book_data, "num_pages")
+				book_format = self.getBookProperty(book_data, "format")
+				book_gr_link = self.getBookProperty(book_data, "link")
+				authors_str = ""
+				if len(book_data.getElementsByTagName("authors")) > 0:
+					book_authors =  book_data.getElementsByTagName("authors")[0]
+					book_author = book_authors.getElementsByTagName("author")
 				
-				for author in book_author:
-					authors_str += author.getElementsByTagName("name")[0].childNodes[0].data + " "
+					for author in book_author:
+						authors_str += author.getElementsByTagName("name")[0].childNodes[0].data + " "
 					
-			if book_name and authors_str and qty > 0 and isbn != "" :
-				new_book = Book(isbn = isbn, 
+				if book_name and authors_str and qty > 0 and isbn != "" :
+					new_book = Book(isbn = isbn, 
 											name = book_name, 
 											author = authors_str, 
 											qty = int(qty),  
@@ -292,18 +316,20 @@ class BookAdd(Handler):
 											pages = int(book_pages) if (book_pages != None)  else  None, 
 											book_format = book_format, 
 											gr_link = book_gr_link)
-				book_key = new_book.put()
-				self.redirect("/add_book")
-		except Exception as e:
-			self.write(repr(e))
+					book_key = new_book.put()
+					update_books()
+					
+					self.render_page(user)
+			except Exception as e:
+				self.write(repr(e))
+		self.redirect('/add_book')
 
 class BookPermalink(Handler):
 	def get(self, book_id):
 		cookie = self.request.cookies.get('name')
 		user = None
 		if cookie:
-			user = db.GqlQuery("select * from user where password ='" + cookie + "'")
-			user = user[0]
+			user = authenticate(cookie)
 		book = Book.get_by_id(int(book_id))
 		self.render("book_link.html", book = book, user = user)
 		
@@ -311,6 +337,7 @@ class BuyBook(Handler):
 	def post(self):
 		user = self.request.get('user')
 		book= self.request.get('book')
+		book_id = self.request.get('book_id')
 		deliver_to = "tathagat tut"
 		status=0
 		placed_time=datetime.now()
@@ -319,7 +346,7 @@ class BuyBook(Handler):
 			order_key = order.put()
 			self.redirect('/orders')
 		else:
-			self.redirect('/index')
+			self.redirect('/book/'+book_id)
 		
 class BookOrder(Handler):
 	def get(self):
@@ -327,35 +354,42 @@ class BookOrder(Handler):
 		if cookie == "" or cookie == None:
 			self.redirect("/index")
 		else:
-			user =  db.GqlQuery("select * from user where password ='" + cookie + "'")
-			if len(list(user)) < 1:
-				self.redirect('/index')
-				return
-			if(user and user[0].userType == '1'):
-				orders = db.GqlQuery("select * from Order ORDER BY placed_time DESC")
-				orders = list(orders)
-				books = []
-				users = []
-				for order in orders:
-					books.append(db.get(order.book))
-					users.append(db.get(order.user))
-				self.render("orders.html", orders = orders, books = books, users = users, user = user[0])
-			else:
-				orders = db.GqlQuery("select * from Order where user='"+ str(user[0].key()) + "' ORDER BY placed_time DESC")
-				books = []
-				users = []
-				orders = list(orders)
-				for order in orders:
-					books.append(db.get(order.book))
-				self.render("orders.html", orders = orders, books = books, user = user[0])
+			user =  authenticate(cookie)
+			self.render_page(user)
+			
 
 	def post(self):
 		order_no = self.request.get('order_no')
 		status = self.request.get('status')
 		user_type = self.request.get('user_type')
-		Order.changeStatus(order_no, int(status), int(user_type))
-		self.redirect('./orders')
-				
+		cookie = self.request.cookies.get("name")
+		order = Order.changeStatus(order_no, int(status), int(user_type))
+		if order and order[1] == 3:
+			update_books()
+			user = authenticate(cookie)
+			self.render_page(user)
+	
+	def render_page(user):
+		if(user and user.userType == '1'):
+			orders = db.GqlQuery("select * from Order ORDER BY placed_time DESC")
+			orders = list(orders)
+			books = []
+			users = []
+			for order in orders:
+				books.append(db.get(order.book))
+				users.append(db.get(order.user))
+			self.render("orders.html", orders = orders, books = books, users = users, user = user)
+		else:
+			if user.userType == '0':
+				orders = db.GqlQuery("select * from Order where user='"+ str(user.key()) + "' ORDER BY placed_time DESC")
+				books = []
+				users = []
+				orders = list(orders)
+				for order in orders:
+					books.append(db.get(order.book))
+				self.render("orders.html", orders = orders, books = books, user = user)
+			else:
+				self.redirec('/index')	
 		
 		
 		
