@@ -148,6 +148,7 @@
                                                                                     <form method="post" action="/orders">
                                                                                             <input type="hidden" name="order_no" value="{{order.key()}}" />
                                                                                             <input type="hidden" name="status" value="3" />
+                                                                                            <input type="hidden" name="user_email" value="{{user.email_id}}" />
                                                                                             <input type="hidden" name="user_type" value="0" />
                                                                                             <article class="item">
                                                                                                 {%if books[i].book_img%}
@@ -267,11 +268,14 @@
                                                                             <tr><td>
                                                                             <div style="text-align:left">
                                                                                 {{users[i].name}}
+                                                                                <input type="hidden" name="user_name" value="{{users[i].name}}" />
+                                                                                
                                                                             </div>
                                                                             </tr></td>
 									{%endif%}
 									{%if users[i].email_id%}
                                                                             <tr><td>{{users[i].email_id}}</td></tr>
+                                                                            <input type="hidden" name="user_email" value="{{users[i].email_id}}" />
 									{%endif%}
 									<tr><td><input type="submit" value="change status"><tr></td>
 									</table>

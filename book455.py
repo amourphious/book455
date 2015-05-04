@@ -354,7 +354,7 @@ class BookOrder(Handler):
 		status = self.request.get('status')
 		user_type = self.request.get('user_type')
 		Order.changeStatus(order_no, int(status), int(user_type))
-		self.redirect('./orders')
+		self.redirect('/orders')
 				
 		
 		
