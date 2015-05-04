@@ -67,7 +67,7 @@ class Book(db.Model):
 	def id(self):
 		a = self.key()
 		b = a.id()
-		return b	
+		return str(b)	
 
 
 order_state  = ["Placed", "Approved", "Shipped", "Canceled", "Delivered"]
@@ -120,21 +120,23 @@ user_map = {}
 def update_books():
 	global all_books
 	all_books = list(db.GqlQuery('select * from Book'))
-	return all_books()
+	return all_books
 	
 def get_books():
+	global all_books
 	if len(all_books) == 0:
 		update_books()
+	logging.error(str(all_books))
 	return all_books
 
 def authenticate(cookie):
-	if user_map[cookie]:
-		return user_map[cookie]
+	if user_map.get(str(cookie)):
+		return user_map[str(cookie)]
 	else: 
 		user =  db.GqlQuery("select * from user where password ='" + cookie + "'")
 		user = list(user)
 		if len(user) > 0:
-			user_map[cookie] = user[0]
+			user_map[str(cookie)] = user[0]
 			return user[0]
 		else:
 			return None
@@ -176,13 +178,14 @@ def valid_login(name,pw,h):
 	salt=h.split('|')[1]
 	return (make_pw_hash(name,pw,salt) == h)
 
-class Login(Handler):
+class Login(Handler):	
 	def get(self):
-		self.render("index.html", login_error="")
-	
+		self.redirect("/index")
+		
 	def post(self):
 		username = self.request.get("login_username")
 		password = self.request.get("login_password")
+		redirect_to = self.request.get("redirect_to")
 		user =  db.GqlQuery("select * from user where email_id ='" + username + "'")
 		user = list(user)
 		i = 0
@@ -192,21 +195,24 @@ class Login(Handler):
 		if(i > 0):
 			if(valid_login(username, password, str(user[0].password))):
 				self.response.headers.add_header('Set-Cookie',"name=%s ; Path=/" % str(user[0].password))
-				self.redirect("/index")
+				self.redirect(redirect_to)
 			else:
-				self.render("index.html", login_error = "invalid credentials")
+				self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "Invalid-Credentials !!")
+				self.redirect(redirect_to)
 		else:
-			self.render("index.html", login_error = "invalid credentials no user")
+			self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "Invalid-credentials!!No-User!!")
+			self.redirect(redirect_to)
 			
 			
 class Signup(Handler):
 	def get(self):
-		self.render("index.html", signup_error="")
-	
+		self.redirect("/index")
+		
 	def post(self):
 		password=self.request.get("signup_password")
 		name = self.request.get("signup_name")
 		email = self.request.get("signup_email")
+		redirect_to = self.request.get("redirect_to")
 		User =  db.GqlQuery("select * from user where email_id ='" + email + "'")
 		User = list(User)
 		i = 0
@@ -219,14 +225,16 @@ class Signup(Handler):
 			logging.error("Creating User" + email+ " " + hashed_password)
 			a_key=new_user.put()
 			self.response.headers.add_header('Set-Cookie',"name=%s ; Path=/" % str(hashed_password))
-			self.redirect("/index")
+			self.redirect(redirect_to)
 		else:
-			self.render("index.html", signup_error = "user Exists !")	
+			self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "User-Exists")
+			self.redirect(redirect_to)
 			
 class Book455(Handler):
 	def get(self):
 		cookie = self.request.cookies.get("name")
 		books = get_books()
+		logging.error(str(books))
 		user = None
 		if len(books) <= 0:
 			books = None
@@ -234,12 +242,30 @@ class Book455(Handler):
 		else:
 			n = len(books)
 		if cookie != "" and cookie != None:
+			logging.error("COOKIE SET")
 			user = authenticate(cookie)
-		self.render("index.html", user = user, books = books, n = n)
+			if user:
+				logging.error("USER SET")
+		
+		error = self.request.cookies.get("rorre")
+		signup_error = None
+		login_error = None
+		
+		if  error !="" and error != None and user == None:
+			self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "")
+			if error == "User Exists":
+				signup_error = error
+				login_error = None
+			else:
+				login_error = error
+				signup_error = None
+				
+		self.render("index.html", user = user, books = books, n = n, signup_error = signup_error, login_error = login_error)
 				
 
 
 class BookAdd(Handler):
+	
 	def render_page(self, user):
 		if(user and user.userType == '1'):
 			books = get_books()
@@ -251,7 +277,7 @@ class BookAdd(Handler):
 	def get(self):
 		cookie = self.request.cookies.get("name")
 		if cookie == "" or cookie == None:
-			self.render("index.html")
+			self.redirect("/index")
 		else:
 			user =  authenticate(cookie)
 			self.render_page(user)
@@ -331,7 +357,22 @@ class BookPermalink(Handler):
 		if cookie:
 			user = authenticate(cookie)
 		book = Book.get_by_id(int(book_id))
-		self.render("book_link.html", book = book, user = user)
+		if book:
+			error = self.request.cookies.get("rorre")
+			signup_error = None
+			login_error = None
+		
+			if  error !="" and error != None and user == None:
+				self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "")
+				if error == "User Exists":
+					signup_error = error
+					login_error = None
+				else:
+					login_error = error
+					signup_error = None
+			self.render("book_link.html", book = book, user = user, signup_error = signup_error, login_error = login_error)
+		else:
+			self.redirect('/index')
 		
 class BuyBook(Handler):
 	def post(self):
@@ -369,8 +410,11 @@ class BookOrder(Handler):
 			user = authenticate(cookie)
 			self.render_page(user)
 	
-	def render_page(user):
-		if(user and user.userType == '1'):
+	def render_page(self, user):
+		if not user:
+			self.redirect("/index")
+			return
+		if(user.userType == '1'):
 			orders = db.GqlQuery("select * from Order ORDER BY placed_time DESC")
 			orders = list(orders)
 			books = []
@@ -394,7 +438,8 @@ class BookOrder(Handler):
 		
 		
 		
-app = webapp2.WSGIApplication([ ('/index' , Book455),
+app = webapp2.WSGIApplication([ ('/', Book455),
+								('/index' , Book455),
 								('/login', Login),
 								('/signup' , Signup),
 								('/add_book', BookAdd),
