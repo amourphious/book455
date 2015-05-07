@@ -27,6 +27,10 @@ template_dir=os.path.join(os.path.dirname(__file__),'templates')
 jinja_env=jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),autoescape = True)
 
 ISBN_RE=re.compile(r"^[0-9]{1,13}$")
+MAIL_RE=re.compile(r"^[\S]+@[\S]+\.[\S]+$")
+
+def valid_email(mail):
+	return MAIL_RE.match(mail)
 
 class user(db.Model):
 	password = db.StringProperty(required=True)
@@ -111,7 +115,8 @@ class Order(db.Model):
 						Book.add_book(1, order.book)
 					else:
 						order.delivered_time = datetime.now()
-					return order.put(), order.status
+					order.put()
+					return order, order.status
 		return None
 
 all_books = []
@@ -213,19 +218,23 @@ class Signup(Handler):
 		name = self.request.get("signup_name")
 		email = self.request.get("signup_email")
 		redirect_to = self.request.get("redirect_to")
-		User =  db.GqlQuery("select * from user where email_id ='" + email + "'")
-		User = list(User)
-		i = 0
-		for us in User:
-			i = i+1
-			logging.error(us.email_id + " " + us.password)
-		if(i == 0):
-			hashed_password=make_pw_hash(email,password)
-			new_user=user(password=hashed_password,name = name, email_id = email, userType='0')
-			logging.error("Creating User" + email+ " " + hashed_password)
-			a_key=new_user.put()
-			self.response.headers.add_header('Set-Cookie',"name=%s ; Path=/" % str(hashed_password))
-			self.redirect(redirect_to)
+		if valid_email(email):
+			User =  db.GqlQuery("select * from user where email_id ='" + email + "'")
+			User = list(User)
+			i = 0
+			for us in User:
+				i = i+1
+				logging.error(us.email_id + " " + us.password)
+			if(i == 0):
+				hashed_password=make_pw_hash(email,password)
+				new_user=user(password=hashed_password,name = name, email_id = email, userType='0')
+				logging.error("Creating User" + email+ " " + hashed_password)
+				a_key=new_user.put()
+				self.response.headers.add_header('Set-Cookie',"name=%s ; Path=/" % str(hashed_password))
+				self.redirect(redirect_to)
+			else:
+				self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "User-Exists")
+				self.redirect(redirect_to)
 		else:
 			self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "User-Exists")
 			self.redirect(redirect_to)
@@ -280,6 +289,7 @@ class BookAdd(Handler):
 			self.redirect("/index")
 		else:
 			user =  authenticate(cookie)
+			logging.error(user)
 			self.render_page(user)
 		
 	def getBookProperty(self, book, prop):
@@ -344,8 +354,9 @@ class BookAdd(Handler):
 											gr_link = book_gr_link)
 					book_key = new_book.put()
 					update_books()
-					
 					self.render_page(user)
+					update_books()
+					self.redirect("/add_books")
 			except Exception as e:
 				self.write(repr(e))
 		self.redirect('/add_book')
@@ -404,11 +415,21 @@ class BookOrder(Handler):
 		status = self.request.get('status')
 		user_type = self.request.get('user_type')
 		cookie = self.request.cookies.get("name")
-		order = Order.changeStatus(order_no, int(status), int(user_type))
-		if order and order[1] == 3:
-			update_books()
-			user = authenticate(cookie)
-			self.render_page(user)
+		user = authenticate(cookie)
+		order = None
+		if user:
+			order = Order.changeStatus(order_no, int(status), int(user_type))
+		if order and user:
+			if order[1] == 3:
+				update_books()
+			email = user.email_id
+			my_mail_id = "Book455 <amourphious1992@gmail.com>"
+			message = "Hello " + user.name + "\n "	+ "your order " + str(order[0].id()) + " status has been changes to " + order_state[order[1]] + "."
+			subject = "Book455: order status changed."
+			mail.send_mail(my_mail_id, email, subject, message)
+			mail.send_mail(my_mail_id, "amourphious1992@gmail.com", subject, message)
+
+		self.redirect('/orders')
 	
 	def render_page(self, user):
 		if not user:
@@ -435,15 +456,79 @@ class BookOrder(Handler):
 			else:
 				self.redirec('/index')	
 		
+class Logout(Handler):
+	def get(self):
+		self.response.headers.add_header("Set-Cookie","name=; Path=/")
+		self.response.headers.add_header("Set-Cookie","rorre=; Path=/")
+		self.redirect("/index")	
 		
-		
-		
+class Message(Handler):
+	def get(self):
+		self.redirect('/')
+	
+	def post(self):
+		email_id = self.request.get("email_id")
+		captcha = self.request.get("captcha")
+		name = self.request.get("name")
+		message = self.request.get("message")
+		my_mail_id = "Book455 <amourphious1992@gmail.com>"
+		if captcha == "JeMH5Lp4":
+			message_ack = "Hello "+ name +"Your message has been sent to Book455: \n\n" + message + "\n\nWe'll get back to you soon\nRegards Book455"
+			message = email_id + "\n" + name + "\n" + message
+			subject = "Book455: you sent a message"
+			if(valid_email(email_id)):
+				mail.send_mail(my_mail_id, email_id, subject, message_ack)
+				mail.send_mail(my_mail_id, "amourphious1992@gmail.com", subject, message) 
+		self.redirect('/')
+
+class ForgotPassword:
+	def get(self):
+		self.render("forgot_password.html")
+	
+	def post(self):
+		email = self.request.get("email")
+		user = db.GqlQuery("select * from user where email_id = '" + email + "'")
+		user = list(user)
+		if len(user) > 0:
+			my_mail_id = "Book455 <amourphious1992@gmail.com>"
+			subject = "book455: Change password request !!"
+			message = "Hello " + user[0].name + "\n You have requested to change your login password for Book455.com. \n please goto following link to change your password. \n www.book455.com/changepassword/"+user[0].password + " \n if you have not ade any such request please ignore this message \n Regards \n Book455."
+			email_id = user[0].email_id  
+			mail.send_mail(my_mail_id, email_id, subject, message_ack)
+			self.render("forgot_password.html", status = "done")
+		else:
+			self.render("forgot_password.html", status = "error")
+
+class ChangePassword:
+	def get(self, user_id):
+		user = authenticate(user_id)
+		if user:
+			self.render("change_password.html")
+		else:
+			self.redirect("/")
+	
+	def post(self, user_id):
+		user = authenticate(user_id)
+		password = self.request.get("new_password")
+		if user:
+			user.password = hashed_password=make_pw_hash(user.email_id,password)
+			user.put()
+			self.response.headers.add_header('Set-Cookie',"rorre=%s ; Path=/" % "PasswordChanged !!!")
+			self.redirect("/index")
+		else:
+			self.redirect("/index")
+			
+				
 app = webapp2.WSGIApplication([ ('/', Book455),
 								('/index' , Book455),
 								('/login', Login),
 								('/signup' , Signup),
 								('/add_book', BookAdd),
 								('/book/([0-9]+)', BookPermalink),
-								("/buy", BuyBook),
-								('/orders', BookOrder)],
+								('/buy', BuyBook),
+								('/orders', BookOrder),
+								('/logout', Logout),
+								('/forgotpassword', ForgotPassword),
+								('/changepassword/([0-9]+)', ChangePassword),
+								('/message', Message)],
 								 debug=True)
